@@ -8,7 +8,10 @@ import ch.ethz.matsim.av.dispatcher.AVVehicleAssignmentEvent;
 import ch.ethz.matsim.av.dispatcher.utils.SingleRideAppender;
 import ch.ethz.matsim.av.framework.AVModule;
 import ch.ethz.matsim.av.passenger.AVRequest;
+import ch.ethz.matsim.av.plcpc.LeastCostPathFuture;
 import ch.ethz.matsim.av.plcpc.ParallelLeastCostPathCalculator;
+import ch.ethz.matsim.av.schedule.AVDriveTask;
+import ch.ethz.matsim.av.schedule.AVOptimizer;
 import ch.ethz.matsim.av.schedule.AVStayTask;
 import ch.ethz.matsim.av.schedule.AVTask;
 import com.google.inject.Inject;
@@ -17,23 +20,30 @@ import org.matsim.api.core.v01.Coord;
 import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.network.Link;
 import org.matsim.api.core.v01.network.Network;
+import org.matsim.contrib.dvrp.data.Vehicle;
+import org.matsim.contrib.dvrp.path.VrpPathWithTravelData;
+import org.matsim.contrib.dvrp.path.VrpPaths;
 import org.matsim.core.api.experimental.events.EventsManager;
 import org.matsim.core.network.NetworkUtils;
 import org.matsim.core.router.util.TravelTime;
 import org.matsim.core.utils.collections.QuadTree;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
-public class SingleHeuristicDispatcher implements AVDispatcher {
+public class SingleHeuristicDispatcher extends AVOptimizer implements AVDispatcher {
     private boolean reoptimize = true;
+    //private double now ; 
 
     final private SingleRideAppender appender;
     final private Id<AVOperator> operatorId;
     final private EventsManager eventsManager;
-
+    final private Network network;
+    
     final private List<AVVehicle> availableVehicles = new LinkedList<>();
     final private List<AVRequest> pendingRequests = new LinkedList<>();
 
@@ -49,10 +59,13 @@ public class SingleHeuristicDispatcher implements AVDispatcher {
 
     private HeuristicMode mode = HeuristicMode.OVERSUPPLY;
 
-    public SingleHeuristicDispatcher(Id<AVOperator> operatorId, EventsManager eventsManager, Network network, SingleRideAppender appender) {
+    public SingleHeuristicDispatcher(Id<AVOperator> operatorId, EventsManager eventsManager, Network network,
+    		SingleRideAppender appender) {
         this.appender = appender;
         this.operatorId = operatorId;
         this.eventsManager = eventsManager;
+        this.network = network;
+
 
         double[] bounds = NetworkUtils.getBoundingBox(network.getNodes().values()); // minx, miny, maxx, maxy
 
@@ -64,12 +77,16 @@ public class SingleHeuristicDispatcher implements AVDispatcher {
     public void onRequestSubmitted(AVRequest request) {
         addRequest(request, request.getFromLink());
     }
+    
+    public static double euclideanDistance(double x1, double y1, double x2, double y2) {   
+ 	   return Math.sqrt((x1 - x2)*(x1 - x2) + (y1 - y2)*(y1 - y2));  
+ }
 
     @Override
     public void onNextTaskStarted(AVVehicle vehicle) {
     	AVTask task = (AVTask)vehicle.getSchedule().getCurrentTask();
         if (task.getAVTaskType() == AVTask.AVTaskType.STAY) {
-            addVehicle(vehicle, ((AVStayTask) task).getLink());
+            addVehicle(vehicle, ((AVStayTask) task).getLink());         
         }
     }
 
@@ -108,6 +125,9 @@ public class SingleHeuristicDispatcher implements AVDispatcher {
         appender.update();
         if (reoptimize) reoptimize(now);
     }
+    
+    @Override
+    public void vehicleEnteredNextLink(Vehicle vehicle, Link link) {}
 
     private void addRequest(AVRequest request, Link link) {
         pendingRequests.add(request);

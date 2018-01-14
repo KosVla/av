@@ -19,21 +19,23 @@ public class AVRequest implements PassengerRequest {
     final private AVOperator operator;
     final private AVDispatcher dispatcher;
     final private AVRoute route;
+    final private double pickupTime;
+    final private double submissionTime;
+    final private Id<Request> requestId;
 
     private AVPickupTask pickupTask;
     private AVDropoffTask dropoffTask;
-    
-    final private Request delegate;
 
-    public AVRequest(Id<Request> id, MobsimPassengerAgent passengerAgent, Link pickupLink, Link dropoffLink, double pickupTime, double submissionTime, AVRoute route, AVOperator operator, AVDispatcher dispatcher) {
-        this.delegate = new RequestImpl(id, 1.0, pickupTime, pickupTime, submissionTime);
-
+    public AVRequest(Id<Request> requestId, MobsimPassengerAgent passengerAgent, Link pickupLink, Link dropoffLink, double pickupTime, double submissionTime, AVRoute route, AVOperator operator, AVDispatcher dispatcher) {
         this.passengerAgent = passengerAgent;
         this.pickupLink = pickupLink;
         this.dropoffLink = dropoffLink;
         this.operator = operator;
         this.route = route;
         this.dispatcher = dispatcher;
+        this.pickupTime = pickupTime;
+        this.submissionTime = submissionTime;
+        this.requestId = requestId;
     }
 
     @Override
@@ -81,31 +83,31 @@ public class AVRequest implements PassengerRequest {
 
 	@Override
 	public double getQuantity() {
-		return delegate.getQuantity();
+		return 1.0;
 	}
 
 	@Override
 	public double getEarliestStartTime() {
-		return delegate.getEarliestStartTime();
+		return pickupTime;
 	}
 
 	@Override
 	public double getLatestStartTime() {
-		return delegate.getLatestStartTime();
+		return pickupTime;
 	}
 
 	@Override
 	public double getSubmissionTime() {
-		return delegate.getSubmissionTime();
+		return submissionTime;
 	}
 
 	@Override
 	public boolean isRejected() {
-		return delegate.isRejected();
+		return false;
 	}
 
 	@Override
 	public Id<Request> getId() {
-		return delegate.getId();
+		return requestId;
 	}
 }

@@ -24,7 +24,7 @@ public class TestScenarioGenerator {
     final static double networkScale = 1000.0;
     final static int populationSize = 100;
     final static long randomSeed = 0;
-    final static double duration = 10 * 3600.0;
+    final static double duration = 100 * 3600.0;
     final static double freespeed = 30.0 * 1000.0 / 3600.0;
     final static String defaultMode = TransportMode.walk;
 
@@ -40,7 +40,7 @@ public class TestScenarioGenerator {
         config.controler().setWriteSnapshotsInterval(-1);
         config.controler().setCreateGraphs(false);
         config.controler().setDumpDataAtEnd(false);
-        config.qsim().setEndTime(duration * 2);
+        config.qsim().setEndTime(duration + 3600.0 * 10.0);
         config.planCalcScore().getOrCreateScoringParameters(null).getOrCreateActivityParams("activity").setScoringThisActivityAtAll(false);
 
         Random random = new Random(randomSeed);
